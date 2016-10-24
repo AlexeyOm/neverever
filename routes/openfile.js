@@ -84,7 +84,8 @@ router.get('/', function(req, res, next) {
           ctx.font = '27px Symbol';
           ctx.fillStyle = 'black';
           ctx.textAlign = 'right';
-          ctx.fillText('Никогда я такого не говорил'  , canvasWidth - 30, canvas.height/2);
+          var said = req.query.gender == 'f' ? 'говорила' : 'говорил';
+          ctx.fillText('Никогда я такого не ' + said , canvasWidth - 30, canvas.height/2);
           ctx.textAlign = 'right';
           ctx.fillText(authorName, canvasWidth - 30, canvasHeight - 80);
 
