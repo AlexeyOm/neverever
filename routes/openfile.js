@@ -30,8 +30,14 @@ router.get('/', function(req, res, next) {
             dom = domUtils.getElements({ class: "infobox" }, dom, true);
             authorName = domUtils.getElementsByTagName('span', dom, true);
             
-            //если имя стоит в дополнительных тегах, то парсим ниже
-            authorName = authorName[0].children[0].data ? authorName[0].children[0].data : authorName[0].children[0].children[0].data;
+            //если имя стоит в дополнительных тегах, то парсим ниже, если нет, то фэйл, выходим
+            try {
+              authorName = authorName[0].children[0].data ? authorName[0].children[0].data : authorName[0].children[0].children[0].data;
+            }
+            catch(err) {
+              fail = true;
+              console.log(err);
+            }
             
             //authorName = authorName[0].children[0].children[0].data;
             //console.log(authorName[0].children[0].data);
@@ -51,7 +57,12 @@ router.get('/', function(req, res, next) {
               }
             }
             if (nodeNum == 0) {fail = true;}
-            imgSrc = 'https:' +  dom[nodeNum].attribs.src;
+            if (fail) {
+              imgSrc = 'images/doodle.jpg';
+            }
+            else {
+              imgSrc = 'https:' +  dom[nodeNum].attribs.src;
+            }
             //console.log(dom[nodeNum].attribs);
           }
         });
