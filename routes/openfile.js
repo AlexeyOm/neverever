@@ -11,7 +11,8 @@ var tmpImg = '/home/ubuntu/workspace/neverever/doodle.jpg';
 
 router.get('/', function(req, res, next) {
  
-  request.get(encodeURI('https://ru.wikipedia.org/wiki/' + req.query.name), function (error, response, body) {
+  var fail = false;
+  request.get(encodeURI('https://ru.wikipedia.org/wiki/w/index.php?search=' + req.query.name), function (error, response, body) {
     if (!error && response.statusCode == 200) {
         
         var imgSrc = '';
@@ -19,58 +20,58 @@ router.get('/', function(req, res, next) {
         var handler = new htmlparser.DomHandler(function (error, dom) {
           if (error) {
              //[...do something for errors...]
+             fail = true;
              console.log("parse error");
           }
           else {
-            //[...parsing done, do something...]
-            var fail = false;
             var domUtils = htmlparser.DomUtils;
             
             //найдём все img в таблице с классом infobox
             dom = domUtils.getElements({ class: "infobox" }, dom, true);
             authorName = domUtils.getElementsByTagName('span', dom, true);
             
-            //если имя стоит в дополнительных тегах, то парсим ниже, если нет, то фэйл, выходим
-            try {
-              authorName = authorName[0].children[0].data ? authorName[0].children[0].data : authorName[0].children[0].children[0].data;
-            }
-            catch(err) {
-              fail = true;
-              console.log(err);
-            }
-            
-            //authorName = authorName[0].children[0].children[0].data;
-            //console.log(authorName[0].children[0].data);
-            //console.log(dom[0]);
-            dom = domUtils.getElementsByTagName("img", dom, true);
-            
-            if (dom.length == 0) {fail = true;}
+            if(authorName.length == 0) {fail = true ;  console.log("failed at authorName.length==0");}
             else {
-              var maxWidth = 100; // иконки и значки имеют ширину менее 100 пикселов, мы ищем фото, которое должно быть больше
-              var nodeNum = 0;
-              for(var i = 0; i < dom.length; i++) {
-                //console.log(dom[i].attribs.width);
-                if (Number(dom[i].attribs.width) > maxWidth) {
+            
+             //если имя стоит в дополнительных тегах, то парсим ниже, если нет, то фэйл, выходим
+              try {
+                authorName = authorName[0].children[0].data ? authorName[0].children[0].data : authorName[0].children[0].children[0].data;
+              }
+              catch(err) {
+                fail = true;
+                console.log(err);
+              }
+            
+
+              dom = domUtils.getElementsByTagName("img", dom, true);
+            
+              if (dom.length == 0) {fail = true;  console.log("failed at dom.length==0");}
+              else {
+                var maxWidth = 100; // иконки и значки имеют ширину менее 100 пикселов, мы ищем фото, которое должно быть больше
+                var nodeNum = -1;
+                for(var i = 0; i < dom.length; i++) {
+                  if (Number(dom[i].attribs.width) > maxWidth) {
                     maxWidth = dom[i].width;
                     nodeNum = i;
+                  }
                 }
               }
-            }
-            if (nodeNum == 0) {fail = true;}
-            if (fail) {
-              imgSrc = 'images/doodle.jpg';
-            }
-            else {
+              if (nodeNum == -1) {fail = true; console.log("failed at nodeNum==0");}
+              else {
               imgSrc = 'https:' +  dom[nodeNum].attribs.src;
-            }
+              }
             //console.log(dom[nodeNum].attribs);
+            }
           }
         });
         var parser = new htmlparser.Parser(handler);
         parser.write(body);
         parser.done();
         
+        console.log("fail = " + fail);
         
+        if (fail) {res.send("/images/doodle.jpg");}
+        else{
         request(imgSrc)
         .on('error', function(err) {
           console.log(err);
@@ -88,10 +89,8 @@ router.get('/', function(req, res, next) {
           Image.src = data;
 
           ctx.drawImage(Image, canvasWidth/6 - Math.floor(Image.width*canvasHeight/Image.height/2), 0, Math.floor(Image.width*canvasHeight/Image.height), canvasHeight);
-        
           ctx.fillStyle = 'lightgrey';
           ctx.fillRect(canvasWidth/3, 0, canvasWidth, canvasWidth);
-
           ctx.font = '27px Symbol';
           ctx.fillStyle = 'black';
           ctx.textAlign = 'right';
@@ -99,14 +98,12 @@ router.get('/', function(req, res, next) {
           ctx.fillText('Никогда я такого не ' + said , canvasWidth - 30, canvas.height/2);
           ctx.textAlign = 'right';
           ctx.fillText(authorName, canvasWidth - 30, canvasHeight - 80);
-
-          res.send(canvas.toDataURL());
-          //res.send('<img src='' + canvas.toDataURL() + '' />');
-        
-        
+          if (fail) res.send('/images/doodle.jpg');
+          else res.send(canvas.toDataURL());
       });  
     });
       }
+    }
       else {
         res.render('index', { title: 'Такого человека нет'});
       }
